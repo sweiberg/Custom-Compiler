@@ -244,7 +244,79 @@ public final class Parser {
      * not strictly necessary.
      */
     public Ast.Expr parsePrimaryExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        if (match("NIL")) {
+            return new Ast.Expr.Literal(null);
+        }
+        else if (match("TRUE")) {
+            return new Ast.Expr.Literal(true);
+        }
+        else if (match("FALSE")) {
+            return new Ast.Expr.Literal(false);
+        }
+        else if (match(Token.Type.INTEGER)) {
+            return new Ast.Expr.Literal(new BigInteger(tokens.get(-1).getLiteral()));
+        }
+        else if (match(Token.Type.DECIMAL)) {
+            return new Ast.Expr.Literal(new BigDecimal(tokens.get(-1).getLiteral()));
+        }
+        else if (match(Token.Type.CHARACTER)) {
+            String s = noEscape();
+
+            return new Ast.Expr.Literal(s.charAt(1));
+        }
+        else if (match(Token.Type.STRING)) {
+            String s = noEscape();
+            s = s.substring(1, s.length() - 1);
+
+            return new Ast.Expr.Literal(s);
+        }
+        else if (match(Token.Type.IDENTIFIER)) {
+            String name = tokens.get(-1).getLiteral();
+            List<Ast.Expr> args = new ArrayList<>();
+
+            if (match("(")) {
+                if (!peek(")")) {
+                    args.add(parseExpression());
+
+                    while (match(",")) {
+                        args.add(parseExpression());
+                    }
+                }
+                if (match(")")) {
+                    return new Ast.Expr.Function(Optional.empty(), name, args);
+                }
+                else {
+                    throw new ParseException("No parenthesis: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                }
+            }
+            else {
+                return new Ast.Expr.Access(Optional.empty(), name);
+            }
+        }
+        else if (match("(")) {
+            Ast.Expr expr = parseExpression();
+            if (!match(")")) {
+                throw new ParseException("No parenthesis: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+            return new Ast.Expr.Group(expr);
+        }
+        else {
+            throw new ParseException("No token: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+        }
+    }
+
+    private String noEscape() {
+        String s = tokens.get(-1).getLiteral();
+
+        s = s.replace("\\b", "\b");
+        s = s.replace("\\n", "\n");
+        s = s.replace("\\r", "\r");
+        s = s.replace("\\t", "\t");
+        s = s.replace("\\'", "'");
+        s = s.replace("\\\"", "\"");
+        s = s.replace("\\\\", "\\");
+
+        return s;
     }
 
     /**
