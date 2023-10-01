@@ -180,7 +180,36 @@ public final class Parser {
      * Parses the {@code secondary-expression} rule.
      */
     public Ast.Expr parseSecondaryExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expr expr = parsePrimaryExpression();
+
+        while (match(".")) {
+            if (!match(Token.Type.IDENTIFIER)) {
+                throw new ParseException("No identifier: ", tokens.get(0).getIndex());
+            }
+
+            String name = tokens.get(-1).getLiteral();
+
+            if (!match("(")) {
+                expr = new Ast.Expr.Access(Optional.of(expr), name);
+            } else {
+                List<Ast.Expr> args = new ArrayList<>();
+
+                while (!match(")")) {
+                    args.add(parseExpression());
+                    if (match(",")) {
+                        args.add(parseExpression());
+                    }
+                }
+
+                if (tokens.has(0) && !match(")")) {
+                    throw new ParseException("No identifier: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+                }
+
+                expr = new Ast.Expr.Function(Optional.of(expr), name, args);
+            }
+        }
+
+        return expr;
     }
 
     /**
