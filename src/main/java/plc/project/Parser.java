@@ -1,6 +1,10 @@
 package plc.project;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The parser takes the sequence of tokens emitted by the lexer and turns that
@@ -52,7 +56,28 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Stmt parseStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expr expr = parseExpression();
+
+        if (match("=")) {
+            Ast.Expr value = parseExpression();
+            if (match(";")) {
+                return new Ast.Stmt.Assignment(expr, value);
+            } else {
+                if (tokens.has(0))
+                    throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw new ParseException("No semicolon: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        } else {
+            if (match(";")) {
+                return new Ast.Stmt.Expression(expr);
+            } else {
+                if (tokens.has(0))
+                    throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw new ParseException("No semicolon: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        }
     }
 
     /**
