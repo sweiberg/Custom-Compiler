@@ -104,35 +104,76 @@ public final class Parser {
      * Parses the {@code expression} rule.
      */
     public Ast.Expr parseExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        return parseLogicalExpression();
     }
 
     /**
      * Parses the {@code logical-expression} rule.
      */
     public Ast.Expr parseLogicalExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expr left = parseEqualityExpression();
+
+        while (match("AND") || match("OR")) {
+            Token op = tokens.get(-1);
+
+            Ast.Expr right = parseEqualityExpression();
+
+            left = new Ast.Expr.Binary(op.getLiteral(), left, right);
+        }
+
+        return left;
     }
 
     /**
      * Parses the {@code equality-expression} rule.
      */
     public Ast.Expr parseEqualityExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expr left = parseAdditiveExpression();
+
+        while (match("<") || match("<=") || match(">" ) || match(">=")
+        || match("==") || match("!=")) {
+            Token op = tokens.get(-1);
+
+            Ast.Expr right = parseAdditiveExpression();
+
+            left = new Ast.Expr.Binary(op.getLiteral(), left, right);
+        }
+
+        return left;
     }
 
     /**
      * Parses the {@code additive-expression} rule.
      */
     public Ast.Expr parseAdditiveExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expr left = parseMultiplicativeExpression();
+
+        while (match("+") || match("-")) {
+            Token op = tokens.get(-1);
+
+            Ast.Expr right = parseMultiplicativeExpression();
+
+            left = new Ast.Expr.Binary(op.getLiteral(), left, right);
+        }
+
+        return left;
     }
 
     /**
      * Parses the {@code multiplicative-expression} rule.
      */
     public Ast.Expr parseMultiplicativeExpression() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        Ast.Expr left = parseSecondaryExpression();
+
+        while (match("*") || match("/")) {
+            Token op = tokens.get(-1);
+
+            Ast.Expr right = parseSecondaryExpression();
+
+            left = new Ast.Expr.Binary(op.getLiteral(), left, right);
+        }
+
+        return left;
     }
 
     /**
