@@ -130,7 +130,7 @@ public final class Parser {
     public Ast.Expr parseEqualityExpression() throws ParseException {
         Ast.Expr left = parseAdditiveExpression();
 
-        while (match("<") || match("<=") || match(">" ) || match(">=")
+        while (match("<") || match("<=") || match(">") || match(">=")
         || match("==") || match("!=")) {
             Token op = tokens.get(-1);
 
