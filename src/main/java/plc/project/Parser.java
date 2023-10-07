@@ -60,7 +60,18 @@ public final class Parser {
      * next tokens start a field, aka {@code LET}.
      */
     public Ast.Field parseField() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        try {
+            Ast.Stmt.Declaration declaration = parseDeclarationStatement();
+
+            if (!declaration.getName().isEmpty()) {
+                return new Ast.Field(declaration.getName(), declaration.getValue());
+            }
+
+            return new Ast.Field(declaration.getName(), declaration.getValue());
+
+        } catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
+        }
     }
 
     /**
