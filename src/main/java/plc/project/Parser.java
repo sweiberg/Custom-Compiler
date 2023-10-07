@@ -79,7 +79,56 @@ public final class Parser {
      * next tokens start a method, aka {@code DEF}.
      */
     public Ast.Method parseMethod() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        try {
+            List<String> parameters = new ArrayList<>();
+            List<Ast.Stmt> statements = new ArrayList<>();
+            String name = "";
+
+            match("DEF");
+
+            if (peek(Token.Type.IDENTIFIER)) {
+                name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+            }
+
+            if (peek("(")) {
+                match("(");
+            }
+
+            while (peek(Token.Type.IDENTIFIER)) {
+                parameters.add(tokens.get(0).getLiteral());
+                match(Token.Type.IDENTIFIER);
+
+                if (peek(",")) {
+                    match(",");
+                }
+            }
+
+            if (peek(")")) {
+                match(")");
+            }
+
+            if (peek("DO")) {
+                match("DO");
+            }
+
+            while (!peek("END")) {
+                statements.add(parseStatement());
+            }
+
+            if (match("END")) {
+                return new Ast.Method(name, parameters, statements);
+            }
+
+            if (tokens.has(0)) {
+                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+            } else {
+                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        }
+        catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
+        }
     }
 
     /**
@@ -118,7 +167,34 @@ public final class Parser {
      * statement, aka {@code LET}.
      */
     public Ast.Stmt.Declaration parseDeclarationStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        try {
+            match("LET");
+            String name = "";
+
+            if (peek(Token.Type.IDENTIFIER)) {
+                name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+            }
+
+            if (match("=")) {
+                Ast.Expr value = parseExpression();
+                if (match(";")) {
+                    return new Ast.Stmt.Declaration(name, Optional.of(value));
+                }
+            } else {
+                if (match(";")) {
+                    return new Ast.Stmt.Declaration(name, Optional.empty());
+                }
+            }
+
+            if (tokens.has(0)) {
+                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+            } else {
+                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        } catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
+        }
     }
 
     /**
