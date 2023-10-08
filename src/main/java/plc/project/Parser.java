@@ -90,9 +90,15 @@ public final class Parser {
                 name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
             }
+            else {
+                throw errMsg("No IDENTIFIER: ");
+            }
 
             if (peek("(")) {
                 match("(");
+            }
+            else {
+                throw errMsg(("No Parenthesis: "));
             }
 
             while (peek(Token.Type.IDENTIFIER)) {
@@ -107,10 +113,17 @@ public final class Parser {
             if (peek(")")) {
                 match(")");
             }
+            else {
+                throw errMsg(("No Parenthesis: "));
+            }
 
             if (peek("DO")) {
                 match("DO");
             }
+            else {
+                throw errMsg(("No DO: "));
+            }
+
 
             while (!peek("END")) {
                 statements.add(parseStatement());
@@ -119,12 +132,10 @@ public final class Parser {
             if (match("END")) {
                 return new Ast.Method(name, parameters, statements);
             }
-
-            if (tokens.has(0)) {
-                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
-            } else {
-                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            else {
+                throw errMsg(("No END: "));
             }
+
         }
         catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
@@ -206,11 +217,7 @@ public final class Parser {
                 }
             }
 
-            if (tokens.has(0)) {
-                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
-            } else {
-                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
-            }
+            throw errMsg("Exception ID ");
         } catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
         }
@@ -244,11 +251,8 @@ public final class Parser {
                 }
             }
 
-            if (tokens.has(0)) {
-                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
-            } else {
-                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
-            }
+            throw errMsg(("No DO: "));
+
         } catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
         }
@@ -267,33 +271,38 @@ public final class Parser {
             if (peek(Token.Type.IDENTIFIER)) {
                 name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
-            }
 
-            if (peek("IN")) {
-                match("IN");
-            }
+                if (peek("IN")) {
+                    match("IN");
+                }
+                else {
+                    throw errMsg("No IN ");
+                }
 
-            Ast.Expr value = parseExpression();
+                Ast.Expr value = parseExpression();
 
-            if (peek("DO")) {
-                match("DO");
-            }
+                if (peek("DO")) {
+                    match("DO");
+                }
+                else {
+                    throw errMsg("No DO ");
+                }
 
-            List<Ast.Stmt> statements = new ArrayList<>();
+                List<Ast.Stmt> statements = new ArrayList<>();
 
-            while (!peek("END")) {
-                statements.add(parseStatement());
-            }
+                while (!peek("END")) {
+                    statements.add(parseStatement());
+                }
 
-            if (peek("END")) {
-                match("END");
-                return new Ast.Stmt.For(name, value, statements);
-            }
-
-            if (tokens.has(0)) {
-                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                if (peek("END")) {
+                    match("END");
+                    return new Ast.Stmt.For(name, value, statements);
+                }
+                else {
+                    throw errMsg("No END ");
+                }
             } else {
-                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+                throw errMsg("No IDENTIFIER ");
             }
         } catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
@@ -314,6 +323,9 @@ public final class Parser {
             if (peek("DO")) {
                 match("DO");
             }
+            else {
+                throw errMsg("No DO ");
+            }
 
             while (!peek("END")) {
                 statements.add(parseStatement());
@@ -322,11 +334,8 @@ public final class Parser {
             if (match("END")) {
                 return new Ast.Stmt.While(condition, statements);
             }
-
-            if (tokens.has(0)) {
-                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
-            } else {
-                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            else {
+                throw errMsg("Exception ID ");
             }
         } catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
@@ -349,11 +358,7 @@ public final class Parser {
                 return new Ast.Stmt.Return(value);
             }
 
-            if (tokens.has(0)) {
-                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
-            } else {
-                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
-            }
+            throw errMsg("Exception ID ");
         } catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
         }
@@ -520,7 +525,7 @@ public final class Parser {
                     return new Ast.Expr.Function(Optional.empty(), name, args);
                 }
                 else {
-                    throw new ParseException("No parenthesis: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    throw errMsg("No Parenthesis: ");
                 }
             }
             else {
@@ -530,7 +535,7 @@ public final class Parser {
         else if (match("(")) {
             Ast.Expr expr = parseExpression();
             if (!match(")")) {
-                throw new ParseException("No parenthesis: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+                throw errMsg("No Parenthesis: ");
             }
             return new Ast.Expr.Group(expr);
         }
@@ -551,6 +556,15 @@ public final class Parser {
         s = s.replace("\\\\", "\\");
 
         return s;
+    }
+
+    private ParseException errMsg(String message) {
+        if (tokens.has(0)) {
+            return new ParseException(message + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+        } else {
+            return new ParseException(message + (tokens.get(-1).getIndex() + tokens.get(-1).getLiteral().length()),
+                    (tokens.get(-1).getIndex() + tokens.get(-1).getLiteral().length()));
+        }
     }
 
     /**

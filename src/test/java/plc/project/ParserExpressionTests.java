@@ -145,6 +145,15 @@ final class ParserExpressionTests {
                                 new Token(Token.Type.IDENTIFIER, "expr", 1)
                         ),
                         new Ast.Expr.Group(new Ast.Expr.Access(Optional.empty(), "expr"))
+                ),
+                Arguments.of("Invalid Parenthesis",
+                        Arrays.asList(
+                                //(expr
+                                new Token(Token.Type.OPERATOR, "(", 0),
+                                new Token(Token.Type.IDENTIFIER, "expr", 1),
+                                new Token(Token.Type.IDENTIFIER, "]", 5)
+                        ),
+                        new Ast.Expr.Group(new Ast.Expr.Access(Optional.empty(), "expr"))
                 )
         );
     }
