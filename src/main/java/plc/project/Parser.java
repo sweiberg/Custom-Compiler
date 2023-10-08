@@ -260,7 +260,44 @@ public final class Parser {
      * {@code FOR}.
      */
     public Ast.Stmt.For parseForStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        try {
+            match("FOR");
+            String name = "";
+
+            if (peek(Token.Type.IDENTIFIER)) {
+                name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+            }
+
+            if (peek("IN")) {
+                match("IN");
+            }
+
+            Ast.Expr value = parseExpression();
+
+            if (peek("DO")) {
+                match("DO");
+            }
+
+            List<Ast.Stmt> statements = new ArrayList<>();
+
+            while (!peek("END")) {
+                statements.add(parseStatement());
+            }
+
+            if (peek("END")) {
+                match("END");
+                return new Ast.Stmt.For(name, value, statements);
+            }
+
+            if (tokens.has(0)) {
+                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+            } else {
+                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        } catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
+        }
     }
 
     /**
@@ -269,7 +306,31 @@ public final class Parser {
      * {@code WHILE}.
      */
     public Ast.Stmt.While parseWhileStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        try {
+            match("WHILE");
+            List<Ast.Stmt> statements = new ArrayList<>();
+            Ast.Expr condition = parseExpression();
+
+            if (peek("DO")) {
+                match("DO");
+            }
+
+            while (!peek("END")) {
+                statements.add(parseStatement());
+            }
+
+            if (match("END")) {
+                return new Ast.Stmt.While(condition, statements);
+            }
+
+            if (tokens.has(0)) {
+                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+            } else {
+                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        } catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
+        }
     }
 
     /**
@@ -278,7 +339,24 @@ public final class Parser {
      * {@code RETURN}.
      */
     public Ast.Stmt.Return parseReturnStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        try {
+            match("RETURN");
+
+            Ast.Expr value = parseExpression();
+
+            if (peek(";")) {
+                match(";");
+                return new Ast.Stmt.Return(value);
+            }
+
+            if (tokens.has(0)) {
+                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+            } else {
+                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        } catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
+        }
     }
 
     /**
