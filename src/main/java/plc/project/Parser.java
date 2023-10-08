@@ -137,27 +137,46 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Stmt parseStatement() throws ParseException {
-        Ast.Expr expr = parseExpression();
-
-        if (match("=")) {
-            Ast.Expr value = parseExpression();
-            if (match(";")) {
-                return new Ast.Stmt.Assignment(expr, value);
+        try {
+            if (peek("LET")) {
+                return parseDeclarationStatement();
+            } else if (peek("IF")) {
+                return parseIfStatement();
+            } else if (peek("FOR")) {
+                return parseForStatement();
+            } else if (peek("WHILE")) {
+                return parseWhileStatement();
+            } else if (peek("RETURN")) {
+                return parseReturnStatement();
             } else {
-                if (tokens.has(0))
-                    throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
-                else
-                    throw new ParseException("No semicolon: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+                Ast.Expr expr = parseExpression();
+                if (match("=")) {
+                    Ast.Expr value = parseExpression();
+                    if (match(";")) {
+                        return new Ast.Stmt.Assignment(expr, value);
+                    } else {
+                        if (tokens.has(0))
+                            throw new ParseException("No semicolon: " +
+                                    tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                        else
+                            throw new ParseException("No semicolon: " + tokens.get(-
+                                    1).getIndex(), tokens.get(-1).getIndex());
+                    }
+                } else {
+                    if (match(";")) {
+                        return new Ast.Stmt.Expression(expr);
+                    } else {
+                        if (tokens.has(0))
+                            throw new ParseException("No semicolon: " +
+                                    tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                        else
+                            throw new ParseException("No semicolon: " + tokens.get(-
+                                    1).getIndex(), tokens.get(-1).getIndex());
+                    }
+                }
             }
-        } else {
-            if (match(";")) {
-                return new Ast.Stmt.Expression(expr);
-            } else {
-                if (tokens.has(0))
-                    throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
-                else
-                    throw new ParseException("No semicolon: " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
-            }
+        } catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
         }
     }
 
