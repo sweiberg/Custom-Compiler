@@ -222,7 +222,36 @@ public final class Parser {
      * {@code IF}.
      */
     public Ast.Stmt.If parseIfStatement() throws ParseException {
-        throw new UnsupportedOperationException(); //TODO
+        try {
+            List<Ast.Stmt> thenStmt = new ArrayList<>();
+            List<Ast.Stmt> elseStmt= new ArrayList<>();
+
+            match("IF");
+
+            Ast.Expr expr = parseExpression();
+
+            if (match("DO")) {
+                while (!peek("ELSE") && !peek("END")) {
+                    thenStmt.add(parseStatement());
+                }
+                if (match("ELSE")) {
+                    while (!peek("END"))
+                        elseStmt.add(parseStatement());
+                }
+                if (peek("END")) {
+                    match("END");
+                    return new Ast.Stmt.If(expr, thenStmt, elseStmt);
+                }
+            }
+
+            if (tokens.has(0)) {
+                throw new ParseException("Exception ID " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+            } else {
+                throw new ParseException("Exception ID " + tokens.get(-1).getIndex(), tokens.get(-1).getIndex());
+            }
+        } catch (ParseException p) {
+            throw new ParseException(p.getMessage(), p.getIndex());
+        }
     }
 
     /**
