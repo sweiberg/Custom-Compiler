@@ -61,9 +61,10 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
                 scope = newscope;
                 ast.getStatements().forEach(this::visit);
+
                 return Environment.NIL;
             } catch (Return r) {
-                    return r.value;
+                return r.value;
             }
         });
 
@@ -79,17 +80,48 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Declaration ast) {
-        throw new UnsupportedOperationException(); //TODO (in lecture)
+        if (ast.getValue().isPresent()) {
+            scope.defineVariable(ast.getName(), visit(ast.getValue().get()));
+        }
+        else {
+            scope.defineVariable(ast.getName(), Environment.NIL);
+        }
+
+        return Environment.NIL;
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.Assignment ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getReceiver().getClass() == Ast.Expr.Access.class) {
+            scope = new Scope(scope);
+            Ast.Expr.Access temp = (Ast.Expr.Access) ast.getReceiver();
+
+            if (temp.getReceiver().isPresent()) {
+                Environment.PlcObject receiver = visit(temp.getReceiver().get());
+                receiver.setField(temp.getName(), visit(ast.getValue()));
+            } else {
+                scope.lookupVariable(temp.getName()).setValue(visit(ast.getValue()));
+            }
+        } else {
+            throw new RuntimeException("Error: Assign Type");
+        }
+
+        return Environment.NIL;
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.If ast) {
-        throw new UnsupportedOperationException(); //TODO
+        boolean condition = requireType(Boolean.class, visit(ast.getCondition()));
+
+        scope = new Scope(scope);
+
+        if (condition) {
+            ast.getThenStatements().forEach(this::visit);
+        } else {
+            ast.getElseStatements().forEach(this::visit);
+        }
+
+        return Environment.NIL;
     }
 
     @Override
