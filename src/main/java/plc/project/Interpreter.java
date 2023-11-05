@@ -124,12 +124,27 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Access ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getReceiver().isPresent()) {
+            Environment.PlcObject rec = visit(ast.getReceiver().get());
+            return rec.getField(ast.getName()).getValue();
+        }
+        return scope.lookupVariable(ast.getName()).getValue();
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Function ast) {
-        throw new UnsupportedOperationException(); //TODO
+        scope = new Scope(scope);
+        List<Environment.PlcObject> args = new ArrayList<>();
+        for (int i = 0; i < ast.getArguments().size(); i++) {
+            args.add(visit(ast.getArguments().get(i)));
+        }
+        if (ast.getReceiver().isPresent()) {
+            Environment.PlcObject receiver = visit(ast.getReceiver().get());
+            return receiver.callMethod(ast.getName(), args);
+        }
+        else {
+            return scope.lookupFunction(ast.getName(), args.size()).invoke(args);
+        }
     }
 
     /**
