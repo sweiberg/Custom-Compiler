@@ -169,12 +169,118 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Group ast) {
-        throw new UnsupportedOperationException(); //TODO
+        return Environment.create(visit(ast.getExpression()).getValue());
     }
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Binary ast) {
-        throw new UnsupportedOperationException(); //TODO
+        String op = ast.getOperator();
+        Object left, right;
+
+        switch (op) {
+            case "AND":
+                if (requireType(Boolean.class, visit(ast.getLeft())) == requireType(Boolean.class, visit(ast.getRight()))) {
+                    return visit(ast.getLeft());
+                } else {
+                    return Environment.create(Boolean.FALSE);
+                }
+
+            case "OR":
+                if (requireType(Boolean.class, visit(ast.getLeft())) == Boolean.TRUE) {
+                    return visit(ast.getLeft());
+                } else if (requireType(Boolean.class, visit(ast.getRight())) == Boolean.TRUE) {
+                    return visit(ast.getRight());
+                } else {
+                    return Environment.create(Boolean.FALSE);
+                }
+
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+                left = visit(ast.getLeft()).getValue();
+                right = visit(ast.getRight()).getValue();
+                if (left instanceof Comparable && left.getClass() == right.getClass()) {
+                    int compare = ((Comparable<Object>) left).compareTo(right);
+                    switch (op) {
+                        case "<":
+                            return compare < 0 ? Environment.create(Boolean.TRUE) : Environment.create(Boolean.FALSE);
+                        case "<=":
+                            return compare <= 0 ? Environment.create(Boolean.TRUE) : Environment.create(Boolean.FALSE);
+                        case ">":
+                            return compare > 0 ? Environment.create(Boolean.TRUE) : Environment.create(Boolean.FALSE);
+                        case ">=":
+                            return compare >= 0 ? Environment.create(Boolean.TRUE) : Environment.create(Boolean.FALSE);
+                    }
+                }
+
+            case "==":
+                if (visit(ast.getLeft()).getValue().equals(visit(ast.getRight()).getValue())) {
+                    return Environment.create(Boolean.TRUE);
+                } else {
+                    return Environment.create(Boolean.FALSE);
+                }
+
+            case "!=":
+                if (visit(ast.getLeft()).getValue().equals(visit(ast.getRight()).getValue())) {
+                    return Environment.create(Boolean.FALSE);
+                } else {
+                    return Environment.create(Boolean.TRUE);
+                }
+
+            case "+":
+                left = visit(ast.getLeft()).getValue();
+                right = visit(ast.getRight()).getValue();
+
+                if (left instanceof String || right instanceof String) {
+                    return Environment.create(left.toString() + right.toString());
+                } else if (left instanceof BigInteger && right instanceof BigInteger) {
+                    return Environment.create(((BigInteger) left).add((BigInteger) right));
+                } else if (left instanceof BigDecimal && right instanceof BigDecimal) {
+                    return Environment.create(((BigDecimal) left).add((BigDecimal) right));
+                } else {
+                    throw new RuntimeException("Type Error: Addition");
+                }
+
+            case "-":
+            case "*":
+                left = visit(ast.getLeft()).getValue();
+                right = visit(ast.getRight()).getValue();
+                if ((left.getClass() == BigDecimal.class || left.getClass() == BigInteger.class) && left.getClass() == right.getClass()) {
+                    if (left.getClass() == BigInteger.class) {
+                        return Environment.create(
+                                op.equals("*")
+                                        ? BigInteger.class.cast(left).multiply(BigInteger.class.cast(right))
+                                        : BigInteger.class.cast(left).subtract(BigInteger.class.cast(right))
+                        );
+                    } else {
+                        return Environment.create(
+                                op.equals("*")
+                                        ? BigDecimal.class.cast(left).multiply(BigDecimal.class.cast(right))
+                                        : BigDecimal.class.cast(left).subtract(BigDecimal.class.cast(right))
+                        );
+                    }
+                } else {
+                    throw new RuntimeException("Type Error: Multiply Subtract");
+                }
+
+            case "/":
+                left = visit(ast.getLeft()).getValue();
+                right = visit(ast.getRight()).getValue();
+                if ((left.getClass() == BigDecimal.class || left.getClass() == BigInteger.class) && left.getClass() == right.getClass()) {
+                    if (BigDecimal.ZERO.equals(right) || BigInteger.ZERO.equals(right)) {
+                        throw new RuntimeException("Edge Case: You can't divide by zero.");
+                    }
+                    return (left instanceof BigDecimal)
+                            ? Environment.create(BigDecimal.class.cast(left).divide(BigDecimal.class.cast(right), RoundingMode.HALF_EVEN))
+                            : Environment.create(BigInteger.class.cast(left).divide(BigInteger.class.cast(right)));
+                } else {
+                    throw new RuntimeException("Type Error: Forward Bracket");
+                }
+
+            default:
+                throw new RuntimeException("Type Error");
+        }
     }
 
     @Override
