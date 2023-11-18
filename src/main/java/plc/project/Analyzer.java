@@ -100,7 +100,18 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.Expression ast) {
-        throw new UnsupportedOperationException();  // TODO
+        visit(ast.getExpression());
+        
+        try {
+            if (ast.getExpression().getClass() != Ast.Expr.Function.class) {
+                throw new RuntimeException("Error: No Function Type");
+            }
+        }
+        catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
