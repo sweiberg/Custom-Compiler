@@ -28,7 +28,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
     public Void visit(Ast.Source ast) {
         try {
             boolean args = false;
-            
+
             if (!ast.getMethods().isEmpty()) {
                 for (int i = 0; i < ast.getMethods().size(); i++) {
                     visit(ast.getMethods().get(i));
@@ -46,18 +46,56 @@ public final class Analyzer implements Ast.Visitor<Void> {
             throw new RuntimeException(r);
         }
 
-
         return null;
     }
 
     @Override
     public Void visit(Ast.Field ast) {
-        throw new UnsupportedOperationException();  // TODO
+         try {
+            if (ast.getValue().isPresent()) {
+                visit(ast.getValue().get());
+                requireAssignable(Environment.getType(ast.getTypeName()), ast.getValue().get().getType());
+                scope.defineVariable(ast.getName(), ast.getName(), ast.getValue().get().getType(), Environment.NIL);
+                ast.setVariable(scope.lookupVariable(ast.getName()));
+            }
+            else {
+                scope.defineVariable(ast.getName(), ast.getName(), Environment.getType(ast.getTypeName()), Environment.NIL);
+                ast.setVariable(scope.lookupVariable(ast.getName()));
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
     public Void visit(Ast.Method ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            Environment.Type returnType = ast.getReturnTypeName().isPresent() ? Environment.getType(ast.getReturnTypeName().get()) : Environment.Type.NIL;
+            scope.defineVariable("returnType", "returnType", returnType, Environment.NIL);
+
+            List<String> paramStrings = ast.getParameterTypeNames();
+            Environment.Type[] paramTypes = paramStrings.isEmpty() ? new Environment.Type[0] : paramStrings.stream().map(Environment::getType).toArray(Environment.Type[]::new);
+
+            scope.defineFunction(ast.getName(), ast.getName(), Arrays.asList(paramTypes), returnType, args -> Environment.NIL);
+
+            if (!ast.getStatements().isEmpty()) {
+                for (Ast.Stmt statement : ast.getStatements()) {
+                    try {
+                        scope = new Scope(scope);
+                        visit(statement);
+                    } finally {
+                        scope = scope.getParent();
+                    }
+                }
+            }
+            ast.setFunction(scope.lookupFunction(ast.getName(), ast.getParameters().size()));
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
