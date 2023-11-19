@@ -368,11 +368,41 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expr.Function ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            List<Environment.Type> params;
+            if (ast.getReceiver().isPresent()) {
+                Ast.Expr.Access temp = Ast.Expr.Access.class.cast(ast.getReceiver().get());
+                visit(temp);
+                params = scope.lookupVariable(temp.getName()).getType().getMethod(ast.getName(), ast.getArguments().size()).getParameterTypes();
+            } else {
+                params = scope.lookupFunction(ast.getName(), ast.getArguments().size()).getParameterTypes();
+            }
+
+            for (int i = 0; i < ast.getArguments().size(); i++) {
+                visit(ast.getArguments().get(i));
+                requireAssignable(params.get(ast.getReceiver().isPresent() ? i + 1 : i), ast.getArguments().get(i).getType());
+            }
+
+            ast.setFunction(ast.getReceiver().isPresent() ? scope.lookupVariable(Ast.Expr.Access.class.cast(
+                    ast.getReceiver().get()).getName()).getType().getMethod(ast.getName(), ast.getArguments().size()) :
+                    scope.lookupFunction(ast.getName(), ast.getArguments().size()));
+
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     public static void requireAssignable(Environment.Type target, Environment.Type type) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            if (target != type && target != Environment.Type.ANY && target != Environment.Type.COMPARABLE) {
+                throw new RuntimeException("Error: Type Not Matching");
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
     }
 
 }
