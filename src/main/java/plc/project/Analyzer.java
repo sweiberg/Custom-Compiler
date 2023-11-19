@@ -239,12 +239,57 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expr.Literal ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            Object literal = ast.getLiteral();
+
+            switch (literal.getClass().getSimpleName()) {
+                case "String":
+                    ast.setType(Environment.Type.STRING);
+                    break;
+                case "Character":
+                    ast.setType(Environment.Type.CHARACTER);
+                    break;
+                case "Nil":
+                    ast.setType(Environment.Type.NIL);
+                    break;
+                case "Boolean":
+                    ast.setType(Environment.Type.BOOLEAN);
+                    break;
+                case "BigInteger":
+                    BigInteger temp = (BigInteger) literal;
+                    if (temp.intValueExact() > Integer.MAX_VALUE || temp.intValueExact() < Integer.MIN_VALUE) {
+                        throw new RuntimeException("Error: Integer range");
+                    }
+                    ast.setType(Environment.Type.INTEGER);
+                    break;
+                case "BigDecimal":
+                    BigDecimal tempDecimal = (BigDecimal) literal;
+                    if (tempDecimal.doubleValue() > Double.MAX_VALUE || tempDecimal.doubleValue() < Double.MIN_VALUE) {
+                        throw new RuntimeException("Error: Decimal range");
+                    }
+                    ast.setType(Environment.Type.DECIMAL);
+                    break;
+                default:
+                    throw new RuntimeException("Error: Bad Type");
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+        return null;
     }
 
     @Override
     public Void visit(Ast.Expr.Group ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            visit(ast.getExpression());
+            if (ast.getExpression().getClass() != Ast.Expr.Binary.class) {
+                throw new RuntimeException("Error: Bad Type");
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
