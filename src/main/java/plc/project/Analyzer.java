@@ -101,7 +101,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
     @Override
     public Void visit(Ast.Stmt.Expression ast) {
         visit(ast.getExpression());
-        
+
         try {
             if (ast.getExpression().getClass() != Ast.Expr.Function.class) {
                 throw new RuntimeException("Error: No Function Type");
@@ -116,12 +116,38 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.Declaration ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            if (ast.getValue().isPresent()) {
+                visit(ast.getValue().get());
+                scope.defineVariable(ast.getName(), ast.getName(), ast.getValue().get().getType(), Environment.NIL);
+                ast.setVariable(scope.lookupVariable(ast.getName()));
+            }
+            else {
+                scope.defineVariable(ast.getName(), ast.getName(), Environment.getType(ast.getTypeName().get()), Environment.NIL);
+                ast.setVariable(scope.lookupVariable(ast.getName()));
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Assignment ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            if (ast.getReceiver().getClass() != Ast.Expr.Access.class) {
+                throw new RuntimeException("Error: No access");
+            }
+            
+            visit(ast.getValue());
+            visit(ast.getReceiver());
+            requireAssignable(ast.getReceiver().getType(), ast.getValue().getType());
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
