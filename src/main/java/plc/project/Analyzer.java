@@ -139,7 +139,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
             if (ast.getReceiver().getClass() != Ast.Expr.Access.class) {
                 throw new RuntimeException("Error: No access");
             }
-            
+
             visit(ast.getValue());
             visit(ast.getReceiver());
             requireAssignable(ast.getReceiver().getType(), ast.getValue().getType());
@@ -152,12 +152,54 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.If ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            if (ast.getThenStatements().isEmpty()) throw new RuntimeException("Error: Missing statement");
+
+            visit(ast.getCondition());
+            requireAssignable(Environment.Type.BOOLEAN, ast.getCondition().getType());
+
+            List<List<Ast.Stmt>> statementLists = Arrays.asList(ast.getElseStatements(), ast.getThenStatements());
+
+            for (List<Ast.Stmt> statements : statementLists) {
+                for (Ast.Stmt statement : statements) {
+                    try {
+                        scope = new Scope(scope);
+                        visit(statement);
+                    } finally {
+                        scope = scope.getParent();
+                    }
+                }
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.For ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            if (ast.getStatements().isEmpty()) {
+                throw new RuntimeException("Error: Missing statement");
+            }
+            
+            visit(ast.getValue());
+            requireAssignable(Environment.Type.INTEGER_ITERABLE, ast.getValue().getType());
+
+            ast.getStatements().forEach(elem -> {
+                try {
+                    scope = new Scope(scope);
+                    scope.defineVariable(ast.getName(), ast.getName(), Environment.Type.INTEGER, Environment.NIL);
+                } finally {
+                    scope = scope.getParent();
+                }
+            });
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
