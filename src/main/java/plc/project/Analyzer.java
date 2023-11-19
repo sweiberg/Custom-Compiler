@@ -204,12 +204,37 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.While ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            visit(ast.getCondition());
+            requireAssignable(Environment.Type.BOOLEAN, ast.getCondition().getType());
+            try {
+                scope = new Scope(scope);
+                for (Ast.Stmt stmt : ast.getStatements()) {
+                    visit(stmt);
+                }
+            } finally {
+                scope = scope.getParent();
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Return ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            visit(ast.getValue());
+
+            Environment.Variable ret = scope.lookupVariable("returnType");
+            requireAssignable(ret.getType(), ast.getValue().getType());
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+
+        return null;
     }
 
     @Override
