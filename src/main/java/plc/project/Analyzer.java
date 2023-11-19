@@ -294,12 +294,76 @@ public final class Analyzer implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expr.Binary ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            String op = ast.getOperator();
+            visit(ast.getLeft());
+            visit(ast.getRight());
+
+            switch (op) {
+                case "AND":
+                case "OR":
+                    requireAssignable(Environment.Type.BOOLEAN, ast.getLeft().getType());
+                    requireAssignable(Environment.Type.BOOLEAN, ast.getRight().getType());
+                    ast.setType(Environment.Type.BOOLEAN);
+                    break;
+                case "<":
+                case "<=":
+                case ">":
+                case ">=":
+                case "==":
+                case "!=":
+                    requireAssignable(Environment.Type.COMPARABLE, ast.getLeft().getType());
+                    requireAssignable(Environment.Type.COMPARABLE, ast.getRight().getType());
+                    ast.setType(Environment.Type.BOOLEAN);
+                    break;
+                case "+":
+                    if (ast.getLeft().getType() == Environment.Type.STRING || ast.getRight().getType() == Environment.Type.STRING) {
+                        ast.setType(Environment.Type.STRING);
+                    } else if ((ast.getLeft().getType() == Environment.Type.INTEGER || ast.getLeft().getType() == Environment.Type.DECIMAL)
+                            && ast.getLeft().getType() == ast.getRight().getType()) {
+                        ast.setType(ast.getLeft().getType());
+                    } else {
+                        throw new RuntimeException("Error: Wrong Type +");
+                    }
+                    break;
+                case "-":
+                case "*":
+                case "/":
+                    if ((ast.getLeft().getType() == Environment.Type.INTEGER || ast.getLeft().getType() == Environment.Type.DECIMAL)
+                            && ast.getLeft().getType() == ast.getRight().getType()) {
+                        ast.setType(ast.getLeft().getType());
+                    } else {
+                        throw new RuntimeException("Error: Wrong Type *-/");
+                    }
+                    break;
+                default:
+                    throw new RuntimeException("Error: Wrong Type Binary");
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+
+        return null;
     }
 
     @Override
     public Void visit(Ast.Expr.Access ast) {
-        throw new UnsupportedOperationException();  // TODO
+        try {
+            if (ast.getReceiver().isPresent()) {
+                Ast.Expr.Access temp = Ast.Expr.Access.class.cast(ast.getReceiver().get());
+                temp.setVariable(scope.lookupVariable(temp.getName()));
+                scope = scope.lookupVariable(temp.getName()).getType().getScope();
+                ast.setVariable(scope.lookupVariable(ast.getName()));
+            }
+            else {
+                ast.setVariable(scope.lookupVariable(ast.getName()));
+            }
+        } catch (RuntimeException r) {
+            throw new RuntimeException(r);
+        }
+
+        return null;
     }
 
     @Override
