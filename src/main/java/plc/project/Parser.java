@@ -2,6 +2,7 @@ package plc.project;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -61,15 +62,66 @@ public final class Parser {
      */
     public Ast.Field parseField() throws ParseException {
         try {
-            Ast.Stmt.Declaration declaration = parseDeclarationStatement();
+            match("LET");
+            String name = "";
+            String typeName = "";
 
-            if (!declaration.getName().isEmpty()) {
-                return new Ast.Field(declaration.getName(), declaration.getValue());
+            if (peek(Token.Type.IDENTIFIER)) {
+                name = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+            } else {
+                if (tokens.has(0))
+                    throw new ParseException("No identifier: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw errMsg("No identifier: ");
             }
 
-            return new Ast.Field(declaration.getName(), declaration.getValue());
+            if (peek(":")) {
+                match(":");
+            } else {
+                if (tokens.has(0))
+                    throw new ParseException("No operator: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw errMsg("No operator: ");
+            }
 
-        } catch (ParseException p) {
+            if (peek(Token.Type.IDENTIFIER)) {
+                typeName = tokens.get(0).getLiteral();
+                match(Token.Type.IDENTIFIER);
+            } else {
+                if (tokens.has(0))
+                    throw new ParseException("No type: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw errMsg("No type: ");
+            }
+
+            if (peek("=")) {
+                match("=");
+                Ast.Expr value = parseExpression();
+                if (peek(";")) {
+                    match(";");
+
+                    return new Ast.Field(name, typeName, Optional.of(value));
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No semicolon: ");
+                }
+            } else {
+                if (peek(";")) {
+                    match(";");
+
+                    return new Ast.Field(name, typeName, Optional.empty());
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No semicolon: ");
+                }
+            }
+        }
+        catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
         }
     }
@@ -81,6 +133,8 @@ public final class Parser {
     public Ast.Method parseMethod() throws ParseException {
         try {
             List<String> parameters = new ArrayList<>();
+            List<String> parametersType = new ArrayList<String>();
+            String returnType = "";
             List<Ast.Stmt> statements = new ArrayList<>();
             String name = "";
 
@@ -105,8 +159,36 @@ public final class Parser {
                 parameters.add(tokens.get(0).getLiteral());
                 match(Token.Type.IDENTIFIER);
 
+                if (peek(":")) {
+                    match(":");
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No operator: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No operator: ");
+                }
+
+                if (peek(Token.Type.IDENTIFIER)) {
+                    parametersType.add(tokens.get(0).getLiteral());
+                    match(Token.Type.IDENTIFIER);
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No type: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No type: ");
+                }
+
                 if (peek(",")) {
                     match(",");
+                    if (peek(")"))
+                        throw new ParseException("Trailing comma: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                } else {
+                    if (!peek(")")) {
+                        if (tokens.has(0))
+                            throw new ParseException("No comma: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                        else
+                            throw errMsg("No comma: ");
+                    }
                 }
             }
 
@@ -114,26 +196,51 @@ public final class Parser {
                 match(")");
             }
             else {
-                throw errMsg(("No Parenthesis: "));
+                if (tokens.has(0))
+                    throw new ParseException("No Parenthesis: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw errMsg(("No Parenthesis: "));
             }
 
-            if (peek("DO")) {
+            if (peek(":")) {
+                match(":");
+
+                if (peek(Token.Type.IDENTIFIER)) {
+                    returnType = tokens.get(0).getLiteral();
+                    match(Token.Type.IDENTIFIER);
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No type: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No type: ");
+                }
+            }
+
+            if (peek("DO"))
                 match("DO");
-            }
             else {
-                throw errMsg(("No DO: "));
+                if (tokens.has(0))
+                    throw new ParseException("No DO: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw errMsg("No DO: ");
             }
-
-
             while (!peek("END")) {
                 statements.add(parseStatement());
             }
 
-            if (match("END")) {
-                return new Ast.Method(name, parameters, statements);
-            }
-            else {
-                throw errMsg(("No END: "));
+            if (peek("END")) {
+                match("END");
+                if (returnType.equals("")) {
+                    return new Ast.Method(name, parameters, parametersType, Optional.empty(), statements);
+                }
+                else {
+                    return new Ast.Method(name, parameters, parametersType, Optional.of(returnType), statements);
+                }
+            } else {
+                if (tokens.has(0))
+                    throw new ParseException("No END: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw errMsg("No END: ");
             }
 
         }
