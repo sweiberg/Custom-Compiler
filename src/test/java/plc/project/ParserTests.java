@@ -527,28 +527,28 @@ final class ParserTests {
         Ast.Source expected = new Ast.Source(
                 Arrays.asList(new Ast.Field("first", "Integer", Optional.of(new Ast.Expr.Literal(BigInteger.ONE)))),
                 Arrays.asList(new Ast.Method("main", Arrays.asList(), Arrays.asList(), Optional.of("Integer"), Arrays.asList(
-                        new Ast.Stmt.While(
-                                new Ast.Expr.Binary("!=",
-                                        new Ast.Expr.Access(Optional.empty(), "first"),
-                                        new Ast.Expr.Literal(BigInteger.TEN)
-                                ),
-                                Arrays.asList(
-                                        new Ast.Stmt.Expression(
-                                                new Ast.Expr.Function(Optional.empty(), "print", Arrays.asList(
-                                                        new Ast.Expr.Access(Optional.empty(), "first"))
-                                                )
-                                        ),
-                                        new Ast.Stmt.Assignment(
+                                new Ast.Stmt.While(
+                                        new Ast.Expr.Binary("!=",
                                                 new Ast.Expr.Access(Optional.empty(), "first"),
-                                                new Ast.Expr.Binary("+",
+                                                new Ast.Expr.Literal(BigInteger.TEN)
+                                        ),
+                                        Arrays.asList(
+                                                new Ast.Stmt.Expression(
+                                                        new Ast.Expr.Function(Optional.empty(), "print", Arrays.asList(
+                                                                new Ast.Expr.Access(Optional.empty(), "first"))
+                                                        )
+                                                ),
+                                                new Ast.Stmt.Assignment(
                                                         new Ast.Expr.Access(Optional.empty(), "first"),
-                                                        new Ast.Expr.Literal(BigInteger.ONE)
+                                                        new Ast.Expr.Binary("+",
+                                                                new Ast.Expr.Access(Optional.empty(), "first"),
+                                                                new Ast.Expr.Literal(BigInteger.ONE)
+                                                        )
                                                 )
                                         )
                                 )
-                        )
-                ))
-        ));
+                        ))
+                ));
         test(input, expected, Parser::parseSource);
     }
 

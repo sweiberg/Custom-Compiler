@@ -2,7 +2,6 @@ package plc.project;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -100,7 +99,6 @@ public final class Parser {
                 Ast.Expr value = parseExpression();
                 if (peek(";")) {
                     match(";");
-
                     return new Ast.Field(name, typeName, Optional.of(value));
                 } else {
                     if (tokens.has(0))
@@ -111,7 +109,6 @@ public final class Parser {
             } else {
                 if (peek(";")) {
                     match(";");
-
                     return new Ast.Field(name, typeName, Optional.empty());
                 } else {
                     if (tokens.has(0))
@@ -181,7 +178,7 @@ public final class Parser {
                 if (peek(",")) {
                     match(",");
                     if (peek(")"))
-                        throw new ParseException("Trailing comma: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                        throw new ParseException("No comma: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
                 } else {
                     if (!peek(")")) {
                         if (tokens.has(0))
@@ -255,46 +252,41 @@ public final class Parser {
      * statement, then it is an expression/assignment statement.
      */
     public Ast.Stmt parseStatement() throws ParseException {
-        try {
-            if (peek("LET")) {
-                return parseDeclarationStatement();
-            } else if (peek("IF")) {
-                return parseIfStatement();
-            } else if (peek("FOR")) {
-                return parseForStatement();
-            } else if (peek("WHILE")) {
-                return parseWhileStatement();
-            } else if (peek("RETURN")) {
-                return parseReturnStatement();
-            } else {
-                Ast.Expr expr = parseExpression();
-                if (match("=")) {
-                    Ast.Expr value = parseExpression();
-                    if (match(";")) {
-                        return new Ast.Stmt.Assignment(expr, value);
-                    } else {
-                        if (tokens.has(0))
-                            throw new ParseException("No semicolon: " +
-                                    tokens.get(0).getIndex(), tokens.get(0).getIndex());
-                        else
-                            throw new ParseException("No semicolon: " + tokens.get(-
-                                    1).getIndex(), tokens.get(-1).getIndex());
-                    }
+        if (peek("LET")) {
+            return parseDeclarationStatement();
+        } else if (peek("IF")) {
+            return parseIfStatement();
+        } else if (peek("FOR")) {
+            return parseForStatement();
+        } else if (peek("WHILE")) {
+            return parseWhileStatement();
+        } else if (peek("RETURN")) {
+            return parseReturnStatement();
+        } else {
+            Ast.Expr current = parseExpression();
+            if (peek("=")) {
+                match("=");
+                Ast.Expr value = parseExpression();
+                if (peek(";")) {
+                    match(";");
+                    return new Ast.Stmt.Assignment(current, value);
                 } else {
-                    if (match(";")) {
-                        return new Ast.Stmt.Expression(expr);
-                    } else {
-                        if (tokens.has(0))
-                            throw new ParseException("No semicolon: " +
-                                    tokens.get(0).getIndex(), tokens.get(0).getIndex());
-                        else
-                            throw new ParseException("No semicolon: " + tokens.get(-
-                                    1).getIndex(), tokens.get(-1).getIndex());
-                    }
+                    if (tokens.has(0))
+                        throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No semicolon: ");
+                }
+            } else {
+                if (peek(";")) {
+                    match(";");
+                    return new Ast.Stmt.Expression(current);
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No semicolon: ");
                 }
             }
-        } catch (ParseException p) {
-            throw new ParseException(p.getMessage(), p.getIndex());
         }
     }
 
@@ -307,24 +299,60 @@ public final class Parser {
         try {
             match("LET");
             String name = "";
+            String typeName = "";
 
             if (peek(Token.Type.IDENTIFIER)) {
                 name = tokens.get(0).getLiteral();
                 match(Token.Type.IDENTIFIER);
+            } else {
+                if (tokens.has(0))
+                    throw new ParseException("No ID: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                else
+                    throw errMsg("No ID: ");
             }
 
-            if (match("=")) {
+            if (peek(":")) {
+                match(":");
+                if (peek(Token.Type.IDENTIFIER)) {
+                    typeName = tokens.get(0).getLiteral();
+                    match(Token.Type.IDENTIFIER);
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No type: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No type: ");
+                }
+            }
+
+            if (peek("=")) {
+                match("=");
                 Ast.Expr value = parseExpression();
-                if (match(";")) {
-                    return new Ast.Stmt.Declaration(name, Optional.of(value));
+                if (peek(";")) {
+                    match(";");
+                    if (typeName.equals(""))
+                        return new Ast.Stmt.Declaration(name, Optional.empty(), Optional.of(value));
+                    else
+                        return new Ast.Stmt.Declaration(name, Optional.of(typeName), Optional.of(value));
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No semicolon: ");
                 }
             } else {
-                if (match(";")) {
-                    return new Ast.Stmt.Declaration(name, Optional.empty());
+                if (peek(";")) {
+                    match(";");
+                    if (typeName.equals(""))
+                        return new Ast.Stmt.Declaration(name, Optional.empty(), Optional.empty());
+                    else
+                        return new Ast.Stmt.Declaration(name, Optional.of(typeName), Optional.empty());
+                } else {
+                    if (tokens.has(0))
+                        throw new ParseException("No semicolon: " + tokens.get(0).getIndex(), tokens.get(0).getIndex());
+                    else
+                        throw errMsg("No semicolon: ");
                 }
             }
-
-            throw errMsg("Exception ID ");
         } catch (ParseException p) {
             throw new ParseException(p.getMessage(), p.getIndex());
         }
@@ -502,7 +530,7 @@ public final class Parser {
         Ast.Expr left = parseAdditiveExpression();
 
         while (match("<") || match("<=") || match(">") || match(">=")
-        || match("==") || match("!=")) {
+                || match("==") || match("!=")) {
             Token op = tokens.get(-1);
 
             Ast.Expr right = parseAdditiveExpression();
