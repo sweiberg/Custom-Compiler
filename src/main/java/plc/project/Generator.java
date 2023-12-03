@@ -30,13 +30,77 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Source ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print("public class Main {");
+        indent++;
+        newline(0);
+
+        if (!ast.getFields().isEmpty()) {
+            for (Ast.Field field : ast.getFields()) {
+                newline(indent);
+                print(field);
+            }
+
+            newline(0);
+        }
+
+        newline(indent);
+        print("public static void main(String[] args) {");
+        indent++;
+
+        newline(indent);
+        print("System.exit(new Main().main());");
+        indent--;
+
+        newline(indent);
+        print("}");
+        newline(0);
+
+        for (Ast.Method method : ast.getMethods()) {
+            newline(indent);
+            print(method);
+        }
+
+        newline(0);
+        indent--;
+
+        newline(indent);
+        print("}");
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Field ast) {
-        throw new UnsupportedOperationException(); //TODO
+        switch (ast.getTypeName()) {
+            case "Integer":
+                print("int");
+                break;
+            case "Decimal":
+                print("double");
+                break;
+            case "Boolean":
+                print("boolean");
+                break;
+            case "Character":
+                print("char");
+                break;
+            case "String":
+                print("String");
+                break;
+            default:
+                break;
+        }
+
+        print(" ");
+        print(ast.getName());
+
+        if (ast.getValue().isPresent()) {
+            print(" = ");
+            print(ast.getValue().get());
+        }
+
+        print(";");
+
         return null;
     }
 
