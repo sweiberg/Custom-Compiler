@@ -1,6 +1,8 @@
 package plc.project;
 
 import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public final class Generator implements Ast.Visitor<Void> {
 
@@ -215,25 +217,85 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Stmt.For ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print("for (");
+        print("int ");
+        print(ast.getName());
+        print(" : ");
+        print(ast.getValue());
+        print(") {");
+
+        indent++;
+
+        for (Ast.Stmt statement : ast.getStatements()) {
+            newline(indent);
+            print(statement);
+        }
+
+        indent--;
+        newline(indent);
+
+        print("}");
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.While ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print("while (");
+        print(ast.getCondition());
+        print(") {");
+
+        if (ast.getStatements().isEmpty()) {
+            print("}");
+        }
+        else {
+            indent++;
+
+            for (Ast.Stmt statement : ast.getStatements()) {
+                newline(indent);
+                print(statement);
+            }
+
+            indent--;
+            newline(indent);
+            print("}");
+        }
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Return ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print("return ");
+        print(ast.getValue());
+        print(";");
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Expr.Literal ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getType().equals(Environment.Type.CHARACTER)) {
+            print("'");
+            print(ast.getLiteral());
+            print("'");
+        } else if (ast.getType().equals(Environment.Type.STRING)) {
+            print("\"");
+            print(ast.getLiteral());
+            print("\"");
+        } else if (ast.getType().equals(Environment.Type.DECIMAL)) {
+            if (ast.getLiteral() instanceof BigDecimal) {
+                BigDecimal decimalLiteral = (BigDecimal) ast.getLiteral();
+                print(decimalLiteral.doubleValue());
+            }
+        } else if (ast.getType().equals(Environment.Type.INTEGER)) {
+            if (ast.getLiteral() instanceof BigInteger) {
+                BigInteger integerLiteral = (BigInteger) ast.getLiteral();
+                print(integerLiteral.intValue());
+            }
+        } else {
+            print(ast.getLiteral());
+        }
         return null;
     }
 
