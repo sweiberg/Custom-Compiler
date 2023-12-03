@@ -301,25 +301,70 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Expr.Group ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print("(");
+        print(ast.getExpression());
+        print(")");
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Expr.Binary ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print(ast.getLeft());
+        print(" ");
+
+        if (ast.getOperator().equals("AND")) {
+            print("&&");
+        }
+        else if (ast.getOperator().equals("OR")) {
+            print("||");
+        }
+        else {
+            print(ast.getOperator());
+        }
+
+        print(" ");
+        print(ast.getRight());
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Expr.Access ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getReceiver().isPresent()) {
+            print(ast.getReceiver().get());
+            print(".");
+        }
+
+        print(ast.getVariable().getJvmName());
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Expr.Function ast) {
-        throw new UnsupportedOperationException(); //TODO
+        if (ast.getReceiver().isPresent()) {
+            print(ast.getReceiver().get());
+            print(".");
+        }
+
+        print(ast.getFunction().getJvmName());
+        print("(");
+
+        if (!ast.getArguments().isEmpty()) {
+            int argumentSize = ast.getArguments().size();
+            int lastIndex = argumentSize - 1;
+
+            for (int i = 0; i < argumentSize; i++) {
+                print(ast.getArguments().get(i));
+
+                if (i != lastIndex) {
+                    print(", ");
+                }
+            }
+        }
+
+        print(")");
         return null;
     }
 
