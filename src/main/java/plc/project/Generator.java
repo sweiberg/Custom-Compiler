@@ -106,19 +106,65 @@ public final class Generator implements Ast.Visitor<Void> {
 
     @Override
     public Void visit(Ast.Method ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print(ast.getFunction().getReturnType().getJvmName());
+        print(" ");
+
+        print(ast.getName());
+        print("(");
+
+        int parameterSize = ast.getParameters().size();
+        int lastIndex = parameterSize - 1;
+
+        for (int i = 0; i < parameterSize; i++) {
+            print(ast.getParameterTypeNames().get(i));
+            print(" ");
+            print(ast.getParameters().get(i));
+
+            if (i != lastIndex) {
+                print(", ");
+            }
+        }
+
+        print(") {");
+
+        if (!ast.getStatements().isEmpty()) {
+            indent++;
+
+            for (Ast.Stmt statement : ast.getStatements()) {
+                newline(indent);
+                print(statement);
+            }
+
+            indent--;
+            newline(indent);
+        }
+
+        print("}");
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Expression ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print(ast.getExpression());
+        print(";");
+
         return null;
     }
 
     @Override
     public Void visit(Ast.Stmt.Declaration ast) {
-        throw new UnsupportedOperationException(); //TODO
+        print(ast.getVariable().getType().getJvmName());
+        print(" ");
+        print(ast.getVariable().getJvmName());
+
+        if (ast.getValue().isPresent()) {
+            print(" = ");
+            print(ast.getValue().get());
+        }
+
+        print(";");
+
         return null;
     }
 
