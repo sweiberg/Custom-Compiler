@@ -69,20 +69,15 @@ public final class Lexer {
     }
 
     public Token lexNumber() {
-        boolean decimal = false;
+        if (peek("[+\\-]")) match("[+\\-]");
 
-        if (peek("[+-]")) chars.advance();
+        while (peek("\\d")) match("\\d");
 
-        while (peek("[0-9.]")) {
-            if (peek("[.]")) {
-                if (!decimal && chars.length > 1) decimal = true;
-                else throw new ParseException("Error: Trailing Or Multiple Decimal", chars.index);
-            }
-
-            chars.advance();
+        if (peek("[.]", "\\d")) {
+            match("[.]");
+            while (peek("\\d")) match("\\d");
+            return chars.emit(Token.Type.DECIMAL);
         }
-
-        if (decimal) return chars.emit(Token.Type.DECIMAL);
 
         return chars.emit(Token.Type.INTEGER);
     }
@@ -119,7 +114,12 @@ public final class Lexer {
     }
 
     public void lexEscape() {
-        throw new UnsupportedOperationException(); //TODO
+        if (peek("\\\\", "[bnrt\'\"\\\\]"))
+            match("\\\\", "[bnrt\'\"\\\\]");
+        else {
+            match(".", ".");
+            throw new ParseException("Error: Illegal Escape", chars.index);
+        }
     }
 
     public Token lexOperator() {
