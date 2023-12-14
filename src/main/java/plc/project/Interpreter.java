@@ -111,16 +111,26 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Stmt.If ast) {
-        boolean condition = requireType(Boolean.class, visit(ast.getCondition()));
-
-        scope = new Scope(scope);
-
-        if (condition) {
-            ast.getThenStatements().forEach(this::visit);
-        } else {
-            ast.getElseStatements().forEach(this::visit);
+        if (requireType(Boolean.class, visit(ast.getCondition()))) {
+            try {
+                scope = new Scope(scope);
+                for (Ast.Stmt stmt : ast.getThenStatements()) {
+                    visit(stmt);
+                }
+            } finally {
+                scope = scope.getParent();
+            }
         }
-
+        else if (!requireType(Boolean.class, visit(ast.getCondition()))) {
+            try {
+                scope = new Scope(scope);
+                for (Ast.Stmt stmt : ast.getElseStatements()) {
+                    visit(stmt);
+                }
+            } finally {
+                scope = scope.getParent();
+            }
+        }
         return Environment.NIL;
     }
 
@@ -294,17 +304,20 @@ public class Interpreter implements Ast.Visitor<Environment.PlcObject> {
 
     @Override
     public Environment.PlcObject visit(Ast.Expr.Function ast) {
-        scope = new Scope(scope);
-        List<Environment.PlcObject> args = new ArrayList<>();
-        for (int i = 0; i < ast.getArguments().size(); i++) {
-            args.add(visit(ast.getArguments().get(i)));
-        }
-        if (ast.getReceiver().isPresent()) {
-            Environment.PlcObject receiver = visit(ast.getReceiver().get());
-            return receiver.callMethod(ast.getName(), args);
-        }
-        else {
-            return scope.lookupFunction(ast.getName(), args.size()).invoke(args);
+        try {
+            scope = new Scope(scope);
+            List<Environment.PlcObject> args = new ArrayList<>();
+            for (int i = 0; i < ast.getArguments().size(); i++) {
+                args.add(visit(ast.getArguments().get(i)));
+            }
+            if (ast.getReceiver().isPresent()) {
+                Environment.PlcObject receiver = visit(ast.getReceiver().get());
+                return receiver.callMethod(ast.getName(), args);
+            } else {
+                return scope.lookupFunction(ast.getName(), args.size()).invoke(args);
+            }
+        } finally {
+            scope = scope.getParent();
         }
     }
 

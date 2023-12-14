@@ -283,7 +283,7 @@ public final class Analyzer implements Ast.Visitor<Void> {
         try {
             visit(ast.getExpression());
             if (ast.getExpression().getClass() != Ast.Expr.Binary.class) {
-                throw new RuntimeException("Error: Bad Type");
+                throw new RuntimeException("Error: Wrong Type");
             }
         } catch (RuntimeException r) {
             throw new RuntimeException(r);
@@ -342,7 +342,6 @@ public final class Analyzer implements Ast.Visitor<Void> {
         } catch (RuntimeException r) {
             throw new RuntimeException(r);
         }
-
 
         return null;
     }
